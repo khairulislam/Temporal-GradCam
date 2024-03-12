@@ -8,13 +8,13 @@ import pandas as pd
 import SimpleITK as sitk
 import math
 import cv2
-from deploy_config import*
-from loss_funnction_And_matrics import*
+from deploy_config import *
+from loss_funnction_And_matrics import *
 from Resnet_3D import Resnet3D
 from tensorflow.keras.optimizers import Adam
 from matplotlib import pyplot as plt
 from skimage.transform import resize
-from Guided_GradCAM_3D_config import*
+from Guided_GradCAM_3D_config import *
 
 # Function to get the image chunk fot guided GradCAM
 def Get_image_array_Array_and_give_chunk(image_array,patch_slice_slice):
