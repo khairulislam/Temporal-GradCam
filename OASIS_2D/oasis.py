@@ -33,6 +33,9 @@ class Experiment:
         )
         
         model.train()
+        train_history = {
+            'epoch':[], 'train_loss':[], 'val_loss':[]
+        }
         
         for epoch in range(epochs):
             start = time.time()
@@ -74,6 +77,11 @@ class Experiment:
 
             lr_scheduler.step(val_loss)
             early_stopping(val_loss, model)
+            
+            train_history['epoch'].append(epoch+1)
+            train_history['train_loss'].append(running_loss)
+            train_history['val_loss'].append(val_loss)
+            
             if early_stopping.early_stop:
                 print('Early stopping ....\n')
                 break
@@ -87,6 +95,8 @@ class Experiment:
         print(f'Loading the best model from {self.best_model_path}')
         model.load_state_dict(torch.load(self.best_model_path))
         model.eval()
+        
+        return train_history
     
     def val(self, model, dataloader):
         model.eval()
