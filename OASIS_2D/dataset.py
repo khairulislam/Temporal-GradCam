@@ -3,16 +3,19 @@ import re, os, SimpleITK
 import random
 import numpy as np
 from sklearn.model_selection import train_test_split
+from PIL import Image
 
 class OASIS_Dataset(Dataset):
     def __init__(
         self, root:str='OASIS_2D', 
-        train:bool=False, transform=None, seed=7
+        train:bool=False, transform=None, seed=7,
+        vit=False
     ) -> None:
         self.root = root
         self.train = train
         self.transform = transform
         self.seed = seed
+        self.vit = vit
         
         patients = self.unique_patients()
         selected_patients = self.train_test_split(patients)
@@ -37,7 +40,6 @@ class OASIS_Dataset(Dataset):
     def train_test_split(self, patients):
         patient_ids = list(patients.keys())
         
-        total = len(patient_ids)
         train_ids, test_ids = train_test_split(
             patient_ids, test_size=0.2, shuffle=True, 
             random_state=self.seed, stratify=list(patients.values())
@@ -50,9 +52,6 @@ class OASIS_Dataset(Dataset):
             return train_ids
         else:
             return test_ids
-            
-        selected_patients = [patient_ids[index] for index in indices]
-        return selected_patients
         
     def _load(self, selected_patients):
         # initialize
@@ -92,8 +91,16 @@ class OASIS_Dataset(Dataset):
         return np.repeat(np.expand_dims(x, axis=0), repeats=3, axis=0)
     
     def __getitem__(self, index):
-        x = self._grayscale_to_rgb(self.images[index])
+        # https://stackoverflow.com/questions/10965417/how-to-convert-a-numpy-array-to-pil-image-applying-matplotlib-colormap
         y = self.labels[index]
+        
+        if self.vit:
+            x = Image.fromarray(
+                np.int16(self.images[index]*255)
+            ).convert('RGB')
+        else:
+            x = self._grayscale_to_rgb(self.images[index])
+        
         
         if self.transform:
             x = self.transform(x)

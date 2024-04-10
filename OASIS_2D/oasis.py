@@ -29,7 +29,8 @@ class Experiment:
             min_lr=1e-6, verbose=True
         )
         early_stopping = EarlyStopping(
-            patience=10, path=self.best_model_path, verbose=True
+            patience=5, path=self.best_model_path, 
+            verbose=True
         )
         
         model.train()
