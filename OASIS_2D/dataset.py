@@ -8,50 +8,86 @@ from PIL import Image
 class OASIS_Dataset(Dataset):
     def __init__(
         self, root:str='OASIS_2D', 
-        train:bool=False, transform=None, seed=7,
-        vit=False
+        flag='train', transform=None, 
+        seed=7, vit=False
     ) -> None:
+        """
+        Initializes an instance of the OASIS_Dataset class.
+
+        Args:
+            root (str, optional): The root directory of the dataset. Defaults to 'OASIS_2D'.
+            flag (str, optional): The flag indicating whether to use the training, testing, or all data. Must be one of 'train', 'test', or 'all'. Defaults to 'train'.
+            transform (callable, optional): A function/transform that takes in an PIL image and returns a transformed version. Defaults to None.
+            seed (int, optional): The random seed. Defaults to 7.
+            vit (bool, optional): Whether to use the Vision Transformer model. Defaults to False.
+
+        Raises:
+            AssertionError: If the flag is not one of 'train', 'test', or 'all'.
+
+        Returns:
+            None
+        """
         self.root = root
-        self.train = train
+        
+        assert flag in ['train', 'test', 'all'], 'flag must be either train, test or all'
+        self.flag = flag
         self.transform = transform
+        
         self.seed = seed
         self.vit = vit
         
-        patients = self.unique_patients()
-        selected_patients = self.train_test_split(patients)
+        patients = self.check_files()
         
-        self._load(selected_patients)
+        if self.flag == 'all':
+            selected_patients = patients
+        else:
+            selected_patients = self.train_test_split(patients)
         
-    def unique_patients(self):
+        self.images, self.labels, self.patient_ids, self.days = self._load(selected_patients)
+        
+    def check_files(self):
         patients = {}
         
         for subdir in ["disease", "healthy"]:
             label = (subdir == 'disease')
             
             for filename in os.listdir(os.path.join(self.root, subdir)):
-                patient_id, _ = re.findall(r'\d+', filename)
+                patient_id, day = re.findall(r'\d+', filename)
                 
-                # assuming same patient id can't be in both healthy and disease dir
-                if patient_id not in patients:
-                    patients[patient_id] = label
+                key = (patient_id, day)
+                # assuming same patient id and day can't be in both healthy and disease dir
+                if key in patients: 
+                    print(f'Duplicate case found {key} !')
+                else: patients[key] = label
                 
         return patients
     
-    def train_test_split(self, patients):
-        patient_ids = list(patients.keys())
+    def train_test_split(self, patients):        
+        patient_ids, labels = [], []
+        for (patient_id, day) in patients:
+            if patient_id in patient_ids: continue
+            
+            patient_ids.append(patient_id)
+            # assuming same patient id and day can't be in both healthy and disease dir
+            labels.append(patients[(patient_id, day)])
         
         train_ids, test_ids = train_test_split(
             patient_ids, test_size=0.2, shuffle=True, 
-            random_state=self.seed, stratify=list(patients.values())
+            random_state=self.seed, stratify=labels
         )
         
         # shuffling is inplace
         # random.Random(self.seed).shuffle(indices)
-        
-        if self.train:
-            return train_ids
+        if self.flag == 'train':
+            return {
+                key: patients[key]
+                for key in patients if key[0] in train_ids
+            }
         else:
-            return test_ids
+            return {
+                key: patients[key]
+                for key in patients if key[0] in test_ids
+            }
         
     def _load(self, selected_patients):
         # initialize
@@ -62,7 +98,7 @@ class OASIS_Dataset(Dataset):
         for subdir, label in zip(["disease", "healthy"], [1, 0]):
             for filename in os.listdir(os.path.join(self.root, subdir)):
                 patient_id, day = re.findall(r'\d+', filename)
-                if patient_id not in selected_patients: 
+                if (patient_id, day) not in selected_patients: 
                     continue
 
                 image_path = os.path.join(self.root, subdir, filename)
@@ -75,20 +111,18 @@ class OASIS_Dataset(Dataset):
                 
         total = len(labels)
         disease_patients = sum(labels)
-        print(f'Total {total}, disease {disease_patients}, healthy {total - disease_patients}. \
-            Unique patients {len(selected_patients)}.')
+        print(f'Total {total}, disease {disease_patients}, healthy {total - disease_patients}.')
         
-        # save data
-        self.labels = labels
-        self.images = images
-        self.patient_ids = patient_ids
-        self.days = days
+        return images, labels, patient_ids, days
         
     def __len__(self):
         return len(self.labels)
     
-    def _grayscale_to_rgb(self, x):
-        return np.repeat(np.expand_dims(x, axis=0), repeats=3, axis=0)
+    def _grayscale_to_rgb(self, x, channel_first=True):
+        if channel_first: axis =0 # C x W X H
+        else: axis = -1 # W x H x C
+        
+        return np.repeat(np.expand_dims(x, axis=axis), repeats=3, axis=axis)
     
     def __getitem__(self, index):
         # https://stackoverflow.com/questions/10965417/how-to-convert-a-numpy-array-to-pil-image-applying-matplotlib-colormap
@@ -101,8 +135,6 @@ class OASIS_Dataset(Dataset):
         else:
             x = self._grayscale_to_rgb(self.images[index])
         
-        
-        if self.transform:
-            x = self.transform(x)
+        if self.transform: x = self.transform(x)
         
         return x, y

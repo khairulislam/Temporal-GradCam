@@ -1,6 +1,8 @@
 import time, os, torch
+import numpy as np
 from utils.callbacks import EarlyStopping
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from utils.plot_config import *
 
 class Experiment:
     def __init__(self, result_dir, device) -> None:
@@ -16,7 +18,7 @@ class Experiment:
             
     @property
     def best_model_path(self): 
-        return os.path.join(self.result_dir, 'best_model_params.pt')
+        return os.path.join(self.result_dir, 'checkpoint.pt')
     
     def train(
         self, model, train_dataloader, val_dataloader,
@@ -29,7 +31,7 @@ class Experiment:
             min_lr=1e-6, verbose=True
         )
         early_stopping = EarlyStopping(
-            patience=5, path=self.best_model_path, 
+            patience=10, path=self.best_model_path, 
             verbose=True
         )
         
@@ -93,11 +95,15 @@ class Experiment:
         print(f'Best val loss: {early_stopping.best_score:4f}')
 
         # load best model weights
+        model = self.load_best_model(model)
+        
+        return train_history
+    
+    def load_best_model(self, model):
         print(f'Loading the best model from {self.best_model_path}')
         model.load_state_dict(torch.load(self.best_model_path))
         model.eval()
-        
-        return train_history
+        return model
     
     def val(self, model, dataloader):
         model.eval()
@@ -145,9 +151,9 @@ class Experiment:
             y_preds.extend(preds.detach().cpu().numpy())
             y_probs.extend(outputs[:, -1].detach().cpu().numpy())
             
-        acc = accuracy_score(y_trues, y_preds)
-        f1 = f1_score(y_trues, y_preds)
-        auc = roc_auc_score(y_trues, y_probs)
+        acc =  np.round(accuracy_score(y_trues, y_preds), 4) 
+        f1 = np.round(f1_score(y_trues, y_preds), 4) 
+        auc = np.round(roc_auc_score(y_trues, y_probs), 4)
 
         print(f'Loss: {total_loss:.4f}, Accuracy {acc:0.4f}, F1 {f1:0.4f}, AUC {auc:0.4f}.')
         
@@ -155,3 +161,13 @@ class Experiment:
             'loss': total_loss,
             'acc': acc, 'f1': f1, 'auc':auc
         }
+        
+    def plot_history(self, train_history, figsize=(10, 6)):
+        plt.figure(figsize=figsize)
+        plt.plot(train_history['epoch'], train_history['train_loss'], label='Train loss')
+        plt.plot(train_history['epoch'], train_history['val_loss'], label='Val loss')
+        plt.xlabel('Train Epochs')
+        plt.ylabel('Cross Entropy Loss')
+        plt.legend()
+        plt.savefig(os.path.join(self.result_dir, 'train_history.jpg'), dpi=200)
+        # plt.show()
