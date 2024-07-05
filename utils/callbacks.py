@@ -4,8 +4,8 @@ class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(
         self, patience=5, verbose=False, 
-        delta=0,
-        path='checkpoint.pt'
+        delta=0, dirpath='',
+        filename='checkpoint.pt'
     ):
         """
         Args:
@@ -26,7 +26,7 @@ class EarlyStopping:
         
         self.val_loss_min = np.Inf
         self.delta = delta
-        self.path = path
+        self.path = os.path.join(dirpath, filename)
         
     def __call__(self, val_loss, model):
         if self.best_score is None:
@@ -34,7 +34,8 @@ class EarlyStopping:
             self.save_checkpoint(val_loss, model)
         elif val_loss + self.delta >= self.best_score:
             self.counter += 1
-            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.verbose:
+                print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
