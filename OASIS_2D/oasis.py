@@ -1,4 +1,4 @@
-import time, os, torch
+import time, os, torch, gc
 import numpy as np
 from utils.callbacks import EarlyStopping
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
@@ -8,6 +8,7 @@ class Experiment:
     def __init__(self, result_dir, device) -> None:
         self.result_dir = result_dir
         self.device = device
+        self.best_model_path = os.path.join(self.result_dir, 'checkpoint.pt')
         
         if not os.path.exists(result_dir):
             os.makedirs(result_dir, exist_ok=True)
@@ -15,10 +16,6 @@ class Experiment:
     @property
     def criterion(self):
         return torch.nn.CrossEntropyLoss
-            
-    @property
-    def best_model_path(self): 
-        return os.path.join(self.result_dir, 'checkpoint.pt')
     
     def train(
         self, model, train_dataloader, val_dataloader,
@@ -31,7 +28,7 @@ class Experiment:
             min_lr=1e-6, verbose=True
         )
         early_stopping = EarlyStopping(
-            patience=10, path=self.best_model_path, 
+            patience=10, dirpath=self.result_dir, 
             verbose=True
         )
         
@@ -94,7 +91,10 @@ class Experiment:
         print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
         print(f'Best val loss: {early_stopping.best_score:4f}')
 
+        gc.collect()
+        
         # load best model weights
+        self.best_model_path = early_stopping.path
         model = self.load_best_model(model)
         
         return train_history
@@ -124,7 +124,8 @@ class Experiment:
             total_loss += loss.item()
             running_corrects += torch.sum(preds == labels.data)
             total += len(labels)
-            
+          
+        gc.collect()  
         if total > 0:
             running_corrects = running_corrects.double() / total
         
@@ -150,7 +151,8 @@ class Experiment:
             y_trues.extend(labels.detach().cpu().numpy())
             y_preds.extend(preds.detach().cpu().numpy())
             y_probs.extend(outputs[:, -1].detach().cpu().numpy())
-            
+           
+        gc.collect() 
         acc =  np.round(accuracy_score(y_trues, y_preds), 4) 
         f1 = np.round(f1_score(y_trues, y_preds), 4) 
         auc = np.round(roc_auc_score(y_trues, y_probs), 4)

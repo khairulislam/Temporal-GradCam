@@ -1,4 +1,4 @@
-import os, torch, random, json
+import os, torch, random, json, gc
 import numpy as np
 import matplotlib.pyplot as plt 
 from torchvision import transforms, models
@@ -13,41 +13,54 @@ def seed_everything(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
-data_transforms = {
-    'train': transforms.Compose([
-        # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] 
-        # to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
-        transforms.ToTensor(), 
-        # transforms.RandomResizedCrop(224),
-        # transforms.RandomHorizontalFlip(),
-    ]),
-    'test': transforms.Compose([
-        transforms.ToTensor(), # PIL Image or numpy.ndarray (H x W x C)
-        # transforms.Resize(256),
-        # transforms.CenterCrop(224)
-    ]),
+vit_transforms = transforms.Compose([
+    # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] 
+    # to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
+    transforms.ToTensor(), 
+    # transforms.RandomResizedCrop(224),
+    transforms.Resize(224),
+    # transforms.RandomHorizontalFlip(),
+])
+
+model_dict = {
+    'ResNet': models.resnet18,
+    'ViT': models.vision_transformer.vit_b_16
 }
 
-vit_transforms = {
-    'train': transforms.Compose([
-        # Converts a PIL Image or numpy.ndarray (H x W x C) in the range [0, 255] 
-        # to a torch.FloatTensor of shape (C x H x W) in the range [0.0, 1.0]
-        transforms.ToTensor(), 
-        # transforms.RandomResizedCrop(224),
-        transforms.Resize(224),
-        # transforms.RandomHorizontalFlip(),
-    ]),
-    'test': transforms.Compose([
-        transforms.ToTensor(), # PIL Image or numpy.ndarray (H x W x C)
-        transforms.Resize(224),
-        # transforms.CenterCrop(224)
-    ]),
-}
-
-def main(args):
-    SEED = args.seed
-    print(f'Random seed {SEED}')
-    seed_everything(SEED)
+def main(args, itr_seed=None):
+    original_seed = args.seed
+    # set random seed
+    if itr_seed is None:
+        SEED = args.seed
+        print(f'Random seed {SEED}')
+        seed_everything(SEED)
+        experiment_seeds = np.random.randint(1e3, size=args.itrs, dtype=int)
+        print(f'Experiment seeds {experiment_seeds}.')
+        
+        # running an iteration directly from run
+        if args.itr_num is not None:
+            SEED = args.seed = experiment_seeds[args.itr_num-1]
+            print(f'{args.itr_num}-th iteration using seed {SEED}.')
+            
+    else:
+        # running an iteration from the whole experiment
+        SEED = args.seed = itr_seed
+        print(f'{args.itr_num}-th iteration using seed {SEED}.')
+        seed_everything(SEED)
+    
+    # set result directory and call iterations
+    if args.itr_num is not None:
+        assert args.itrs is not None and args.itr_num <= args.itrs, 'itr_num must be smaller than itrs'
+        result_dir = os.path.join('OASIS_2D', args.result_dir, args.model, str(args.itr_num))
+        
+    elif args.itrs is not None:
+        for itr_num in range(1, args.itrs+1):
+            args.itr_num = itr_num
+            # args.seed = int(experiment_seeds[itr_num-1])
+            main(args, int(experiment_seeds[itr_num-1]))
+        return
+    else:
+        result_dir = os.path.join('OASIS_2D', args.result_dir, args.model)
     
     # Get cpu, gpu device for training.
     device = (
@@ -56,18 +69,9 @@ def main(args):
     )
     print(f"Using {device} device")
     
-    # Prepare dataset and dataloader
-    train_dataset = OASIS_Dataset(flag='train', seed=SEED)
-    test_dataset = OASIS_Dataset(flag='test', seed=SEED)
-
-    train_dataloader = DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True
-    )
-    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size)
-    
     # Get pretrained model
     # https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
-    model = getattr(models, args.model)(weights='DEFAULT')
+    model = model_dict[args.model](weights='DEFAULT')
 
     # Here, we need to freeze all the network except the final layer. 
     # We need to set requires_grad = False to freeze the parameters 
@@ -75,18 +79,37 @@ def main(args):
     for param in model.parameters():
         param.requires_grad = False
         
-    # Parameters of newly constructed modules have requires_grad=True by default
-    num_ftrs = model.fc.in_features
-    # Here the size of each output sample is set to 2.
-    # Alternatively, it can be generalized to ``nn.Linear(num_ftrs, len(class_names))``.
-    model.fc = torch.nn.Linear(num_ftrs, 2)
+    if args.model == 'ViT':
+        num_ftrs = model.heads.head.in_features
+        model.heads.head = torch.nn.Linear(num_ftrs, 2)
+        transform = vit_transforms
+    elif args.model == 'ResNet':
+        # Parameters of newly constructed modules have requires_grad=True by default
+        num_ftrs = model.fc.in_features
+        model.fc = torch.nn.Linear(num_ftrs, 2)
+        transform = None
+    else:
+        raise NotImplementedError(f"Model {args.model} is not implemented !")
 
     model = model.to(device)
     
-    if args.itr is not None:
-        result_dir = os.path.join('OASIS_2D', args.result_dir, args.model, str(args.itr))
-    else:
-        result_dir = os.path.join('OASIS_2D', args.result_dir, args.model)
+    # Prepare dataset and dataloader
+    train_dataset = OASIS_Dataset(
+        flag='train', seed=SEED, 
+        transform=transform,
+        vit=args.model=='ViT'
+    )
+    test_dataset = OASIS_Dataset(
+        flag='test', seed=SEED, 
+        transform=transform, 
+        vit=args.model=='ViT'
+    )
+
+    train_dataloader = DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=True
+    )
+    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size)
+    
     # result_dir = os.path.join('OASIS_2D', 'results', 'ResNet18')
     exp = Experiment(result_dir=result_dir, device=device)
 
@@ -114,6 +137,9 @@ def main(args):
         json.dump(test_result, output_file, indent=4)
     with open(os.path.join(result_dir, 'config.json'), 'w') as output_file:
         json.dump(vars(args), output_file, indent=4)
+    
+    args.seed = original_seed
+    print('Done\n\n')
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -121,9 +147,10 @@ def get_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('--itr', default=None, type=int, help='iteration number')
+    parser.add_argument('--itrs', default=5, type=int, help='number of iteration')
+    parser.add_argument('--itr_num', default=None, type=int, help='iteration number. 1 <= itr_num <= itrs')
     # basic config
-    parser.add_argument('--model', default='resnet18', type=str, help='model name', choices=['resnet18'])
+    parser.add_argument('--model', default='ResNet', type=str, help='model name', choices=list(model_dict.keys()))
     parser.add_argument('--seed', default=7, type=int, help='random seed')
     parser.add_argument('--result_dir', default='results',  type=str, help='directory to save the result')
     parser.add_argument('--test', action='store_true', help='load a pretrained model for testing a split')
