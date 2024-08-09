@@ -3,7 +3,7 @@ import pandas as pd
 
 iterations = 5
 root_folder = 'OASIS_2D/results'
-model = 'ViT'
+model = 'ViT_seq_3'
 
 results = None
 

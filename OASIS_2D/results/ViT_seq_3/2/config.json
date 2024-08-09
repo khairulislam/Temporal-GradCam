@@ -1,0 +1,15 @@
+{
+    "itrs": 5,
+    "itr_num": 2,
+    "model": "ViT",
+    "seed": 196,
+    "result_dir": "results",
+    "test": false,
+    "device": "cuda",
+    "batch_size": 8,
+    "seq_len": 3,
+    "epochs": 100,
+    "lr": 0.001,
+    "dropout": 0.01,
+    "hidden_size": 64
+}

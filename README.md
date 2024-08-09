@@ -39,6 +39,10 @@ For training we `freeze all layers except the output Linear layer`.
 - Early stop: 5
 - Experiment iteration: 5, the whole experiment is repeated 5 times using different random seed each time. The test results and best model checkpoints are saved.
 
+*Figure*: Training vistory of one iteration from ResNet
+
+<img src="OASIS_2D/results/ResNet/1/train_history.jpg" alt="gradient" width="60%"/>
+
 ## Temporal Model
 
 To create the temporal version of the OASIS model we, 
@@ -60,13 +64,16 @@ To create the temporal version of the OASIS model we,
 
 ## Results 
 
-Following shows the average test result across all iterations. 
+Following shows the average test result across all five iterations. 
 
 | Model | Loss | Accuracy | F1-score | AUC |
 |:---|:---:|:---:|:---:|:---:|
 | ResNet | 1.32 | 83.87 | 81.32 | 91.68 | 
 | ResNet (Seq 3) | 1.45 | 79.87 | 81.24 | 82.24 |
-| ViT | 1.22 | 85.77 | 86.5 | 92.08 |
+| ViT | 1.22 | 85.77 | 86.50 | 92.08 |
+| ViT (Seq 3) | 0.94 | 87.72 | 88.25 | 95.13 |
+
+The temporal model (sequence length 3) with Vision Transformer is performing best so far.
 
 ## Interpretation
 
