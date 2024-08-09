@@ -4,7 +4,7 @@ from utils.callbacks import EarlyStopping
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from utils.plot_config import *
 
-class Experiment:
+class Experiment_Temporal:
     def __init__(self, result_dir, device) -> None:
         self.result_dir = result_dir
         self.device = device
@@ -48,8 +48,9 @@ class Experiment:
             model.train()
             
             # Iterate over data.
-            for inputs, labels in train_dataloader:
+            for inputs, labels, padding in train_dataloader:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
+                padding = padding.float().to(self.device)
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -57,7 +58,7 @@ class Experiment:
                 # forward
                 # track history if only in train
                 with torch.set_grad_enabled(True):
-                    outputs = model(inputs)
+                    outputs = model(inputs, padding)
                     _, preds = torch.max(outputs, 1)
                     loss = criterion(outputs, labels)
 
@@ -113,11 +114,12 @@ class Experiment:
         criterion = self.criterion()
         
         # Iterate over data.
-        for inputs, labels in dataloader:
+        for inputs, labels, padding in dataloader:
             inputs, labels = inputs.to(self.device), labels.to(self.device)
+            padding = padding.float().to(self.device)
 
             with torch.set_grad_enabled(False):
-                outputs = model(inputs)
+                outputs = model(inputs, padding)
                 _, preds = torch.max(outputs, 1)
                 loss = criterion(outputs, labels)
 
@@ -139,13 +141,15 @@ class Experiment:
 
         y_trues, y_preds, y_probs = [], [], []
         # Iterate over data.
-        for inputs, labels in dataloader:
+        for inputs, labels, padding in dataloader:
             inputs, labels = inputs.to(self.device), labels.to(self.device)
+            padding = padding.float().to(self.device)
 
             with torch.set_grad_enabled(False):
-                outputs = model(inputs)
+                outputs = model(inputs, padding)
                 loss = criterion(outputs, labels)
-                
+            
+            outputs = torch.sigmoid(outputs)
             _, preds = torch.max(outputs, 1)
             total_loss += loss.item()
 
@@ -161,7 +165,7 @@ class Experiment:
         print(f'Loss: {total_loss:.4f}, Accuracy {acc:0.4f}, F1 {f1:0.4f}, AUC {auc:0.4f}.')
         
         return {
-            'loss': total_loss,
+            'loss': np.round(total_loss, 4),
             'acc': acc, 'f1': f1, 'auc':auc
         }
         
@@ -172,5 +176,5 @@ class Experiment:
         plt.xlabel('Train Epochs')
         plt.ylabel('Cross Entropy Loss')
         plt.legend()
-        plt.savefig(os.path.join(self.result_dir, 'train_history.jpg'), dpi=200)
+        plt.savefig(os.path.join(self.result_dir, 'train_history.jpg'), dpi=200, bbox_inches='tight')
         # plt.show()
