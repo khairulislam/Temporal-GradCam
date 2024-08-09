@@ -1,32 +1,18 @@
 Table of contents
 - [TemporalGradCam](#temporalgradcam)
-  - [Tools](#tools)
-  - [Files](#files)
-  - [Literature](#literature)
   - [Dataset](#dataset)
   - [Model](#model)
   - [Temporal Model](#temporal-model)
   - [Results](#results)
+  - [Interpretation](#interpretation)
+  - [Tools](#tools)
+  - [Files](#files)
+  - [Literature](#literature)
 
 # TemporalGradCam
 Temporal interpretation of medical image data.
 
-## Tools 
-* [Captum](https://captum.ai/)
-* [GuidedGradCAM](https://github.com/fitushar/3D-GuidedGradCAM-for-Medical-Imaging)
 
-## Files
-
-The following files are available for now with pre-trained vision models for transfer learning on the medical dataset.
-
-* oasis_resnet: Run the oasis dataset with ResNet model.
-* oasis_ViT: Run the oasis dataset with Vision Transformer.
-
-## Literature
-
-* [GRAD-CAM GUIDED CHANNEL-SPATIAL ATTENTION MODULE FOR FINE-GRAINED VISUAL CLASSIFICATION](https://ieeexplore.ieee.org/iel7/9596063/9596068/09596481.pdf)
-* [MGAug: Multimodal Geometric Augmentation in Latent Spaces of Image Deformations](https://arxiv.org/pdf/2312.13440.pdf)
-* [Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization](https://arxiv.org/pdf/1610.02391.pdf)
 
 ## Dataset 
 
@@ -81,3 +67,26 @@ Following shows the average test result across all iterations.
 | ResNet | 1.32 | 83.87 | 81.32 | 91.68 | 
 | ResNet (Seq 3) | 1.45 | 79.87 | 81.24 | 82.24 |
 | ViT | 1.22 | 85.77 | 86.5 | 92.08 |
+
+## Interpretation
+
+*Figure*: Interpreting a patient image using Gradient Shap and resnet18 model
+
+<img src="OASIS_2D/results/gradient.png" alt="gradient" width="60%"/>
+
+## Tools 
+* [Captum](https://captum.ai/)
+* [GuidedGradCAM](https://github.com/fitushar/3D-GuidedGradCAM-for-Medical-Imaging)
+
+## Files
+
+The following files are available for now with pre-trained vision models for transfer learning on the medical dataset.
+
+* oasis_resnet: Run the oasis dataset with ResNet model.
+* oasis_ViT: Run the oasis dataset with Vision Transformer.
+
+## Literature
+
+* [GRAD-CAM GUIDED CHANNEL-SPATIAL ATTENTION MODULE FOR FINE-GRAINED VISUAL CLASSIFICATION](https://ieeexplore.ieee.org/iel7/9596063/9596068/09596481.pdf)
+* [MGAug: Multimodal Geometric Augmentation in Latent Spaces of Image Deformations](https://arxiv.org/pdf/2312.13440.pdf)
+* [Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization](https://arxiv.org/pdf/1610.02391.pdf)
