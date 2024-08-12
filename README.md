@@ -5,6 +5,8 @@ Table of contents
   - [Temporal Model](#temporal-model)
   - [Results](#results)
   - [Interpretation](#interpretation)
+    - [Interpreting sample patient image for **ResNet**](#interpreting-sample-patient-image-for-resnet)
+    - [Interpreting sample patient image for **ViT**](#interpreting-sample-patient-image-for-vit)
   - [Tools](#tools)
   - [Files](#files)
   - [Literature](#literature)
@@ -77,9 +79,26 @@ The temporal model (sequence length 3) with Vision Transformer is performing bes
 
 ## Interpretation
 
-*Figure*: Interpreting a patient image using Gradient Shap and resnet18 model
+### Interpreting sample patient image for **ResNet**
+Note that, this is not for the temporal model.
 
-<img src="OASIS_2D/results/gradient.png" alt="gradient" width="60%"/>
+| No | Sample | Gradient Shap | GradCam | Guided GradCam | Guided Backprop |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1| <img src="OASIS_2D/results/ResNet/1/sample_0.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/gradientshap_heat_map_0.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/gradcam_heat_map_0.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/guided_gradcam_heat_map_0.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/guided_backprop_heat_map_0.jpg"> |
+| 2| <img src="OASIS_2D/results/ResNet/1/sample_1.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/gradientshap_heat_map_1.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/gradcam_heat_map_1.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/guided_gradcam_heat_map_1.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/guided_backprop_heat_map_1.jpg"> |
+| 3| <img src="OASIS_2D/results/ResNet/1/sample_2.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/gradientshap_heat_map_2.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/gradcam_heat_map_2.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/guided_gradcam_heat_map_2.jpg"> | <img src="OASIS_2D/results/ResNet/1/interpretation/guided_backprop_heat_map_2.jpg"> |
+
+
+### Interpreting sample patient image for **ViT**
+Note that, this is not for the temporal model.
+
+| No | Sample | Gradient Shap | GradCam | Guided GradCam | Guided Backprop |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | <img src="OASIS_2D/results/ViT/1/sample_0.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/gradientshap_heat_map_0.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/gradcam_heat_map_0.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/guided_gradcam_heat_map_0.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/guided_backprop_heat_map_0.jpg"> |
+| 2 | <img src="OASIS_2D/results/ViT/1/sample_1.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/gradientshap_heat_map_1.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/gradcam_heat_map_1.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/guided_gradcam_heat_map_1.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/guided_backprop_heat_map_1.jpg"> |
+| 3 | <img src="OASIS_2D/results/ViT/1/sample_2.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/gradientshap_heat_map_2.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/gradcam_heat_map_2.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/guided_gradcam_heat_map_2.jpg"> | <img src="OASIS_2D/results/ViT/1/interpretation/guided_backprop_heat_map_2.jpg"> |
+
+<!-- <img src="OASIS_2D/results/gradient.png" alt="gradient" width="60%"/> -->
 
 ## Tools 
 * [Captum](https://captum.ai/)
