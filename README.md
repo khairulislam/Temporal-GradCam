@@ -1,4 +1,7 @@
-Table of contents
+# TemporalGradCam
+
+Temporal interpretation of medical image data.
+
 - [TemporalGradCam](#temporalgradcam)
   - [Dataset](#dataset)
   - [Model](#model)
@@ -11,11 +14,6 @@ Table of contents
   - [Files](#files)
   - [Literature](#literature)
 
-# TemporalGradCam
-Temporal interpretation of medical image data.
-
-
-
 ## Dataset 
 
 The `OASIS_2D` dataset contains brain X-ray images of 100 patients.
@@ -27,7 +25,7 @@ The `OASIS_2D` dataset contains brain X-ray images of 100 patients.
 
 *Figure*: Length distribution when patients images are converted to a time series. Each patient can have multiple X-rays at different days. Most patients only have one image.
 
-<img src="OASIS_2D/length distribution.png" alt="distribution" width="60%"/>
+<img src="OASIS_2D/length distribution.png" alt="distribution" width="40%"/>
 
 ## Model
 
